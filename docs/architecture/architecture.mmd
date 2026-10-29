@@ -1,0 +1,57 @@
+---
+title: System Architecture - AI Code Reviewer
+config:
+  theme: base
+  themeVariables:
+    fontFamily: "Inter, system-ui, sans-serif"
+    primaryColor: "#F8FAFC"
+    primaryBorderColor: "#1E293B"
+    primaryTextColor: "#1E293B"
+    lineColor: "#64748B"
+    clusterBkg: "#EEF2FF"
+    clusterBorder: "#94A3B8"
+---
+flowchart TB
+    classDef edge     fill:#F59E0B,stroke:#1E293B,color:#1E293B,stroke-width:1px;
+    classDef core     fill:#6366F1,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef data     fill:#10B981,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
+    classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
+
+    Client([Client]):::edge
+
+    subgraph Review["Review pipeline"]
+        direction TB
+        Diff["Parse unified diff<br/>added lines + line numbers"]:::core
+        Prompt["Build prompt<br/>embed the diff"]:::core
+        Parse["Parse JSON comments"]:::core
+    end
+
+    subgraph Providers["Provider (behind one protocol)"]
+        direction TB
+        Fake["FakeProvider<br/>offline rule-based detector (CI)"]:::control
+        Claude["AnthropicProvider<br/>Claude Messages API (production)"]:::control
+    end
+
+    subgraph Eval["Bug-catching benchmark"]
+        direction TB
+        Cases[(Labeled diffs<br/>buggy and clean)]:::data
+        Score["Line-level precision and recall"]:::obs
+    end
+
+    subgraph Edge["Service layer (stdlib HTTP)"]
+        direction TB
+        Router["Router<br/>/health | /ready | /metrics | /review | /evaluate"]:::core
+        Validate["Validation<br/>bounded diff text"]:::control
+    end
+
+    Result["Review comments"]:::obs
+
+    Diff --> Prompt --> Providers --> Parse
+    Fake -.-> Parse
+    Claude -.-> Parse
+    Cases --> Score
+    Parse -.-> Score
+    Client -->|diff| Router --> Validate --> Review
+    Parse --> Result
+    Result --> Router -->|JSON response| Client
