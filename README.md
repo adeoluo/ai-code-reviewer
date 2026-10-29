@@ -44,6 +44,8 @@ decisions.
 > Reproduce with `python -m ai_code_reviewer evaluate`. The benchmark has diffs that introduce real
 > defects (mutable defaults, bare excepts, `== None`, `eval`, hardcoded secrets, `shell=True`, SQL
 > built by concatenation, `assert` used for validation) and clean diffs that must not be flagged.
+>
+> These numbers come from the deterministic offline provider and are reproduced by the test suite in continuous integration (no network, no credentials). In production the provider is Claude behind the same interface, which is where recall on the semantic bugs the pattern rules miss is expected to improve.
 
 | Metric (13 labeled diffs) | Value |
 |---|---:|
