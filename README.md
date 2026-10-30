@@ -59,6 +59,27 @@ misses exactly the two **semantic** bugs (an off-by-one `range(len(x) + 1)` and 
 for a language model: swapping the offline provider for Claude is where recall on semantic bugs
 improves, with the benchmark in place to prove it.
 
+### Scale
+
+To check that the reviewer holds up on large pull-request volumes, `benchmarks/scale.py` runs
+`Reviewer.review` over growing sets of synthetic diffs, each planting one rule-detectable bug among
+clean added lines, and times the review loop while tracking the workload's peak memory with the
+standard-library `tracemalloc`. The data is synthetic and the numbers are environment-specific; on
+this clean set precision and recall stay at 1.000 (every planted bug is a pattern the rules catch),
+throughput stays roughly flat, and memory grows linearly with the number of diffs.
+
+| Diffs | Wall-clock (s) | Throughput (diffs/s) | Peak memory (MiB) | Precision | Recall |
+|---:|---:|---:|---:|---:|---:|
+| 8,000 | 1.22 | ~6,570 | 2.79 | 1.000 | 1.000 |
+| 20,000 | 3.54 | ~5,660 | 6.87 | 1.000 | 1.000 |
+| 40,000 | 5.86 | ~6,830 | 13.85 | 1.000 | 1.000 |
+| 80,000 | 15.47 | ~5,170 | 27.81 | 1.000 | 1.000 |
+
+The precision/recall here reflect only rule-detectable bugs on synthetic diffs and come from the
+deterministic offline provider; production swaps in a real language-model API behind the same
+interface, which is where recall on semantic bugs improves. Reproduce with
+`uv run python benchmarks/scale.py`.
+
 ## Demonstration
 
 ```text
