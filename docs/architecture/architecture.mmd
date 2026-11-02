@@ -5,40 +5,56 @@ flowchart TD
     classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Client([Client]):::edge
+    Client(["HTTP client"]):::edge
+    CLI(["CLI<br/>review, evaluate, serve"]):::edge
 
-    subgraph Review["Review pipeline"]
+    subgraph Inputs["Inputs (stdlib HTTP service and benchmark)"]
         direction TB
-        Diff["Parse unified diff<br/>added lines + line numbers"]:::core
-        Prompt["Build prompt<br/>embed the diff"]:::core
-        Parse["Parse JSON comments"]:::core
+        Router["Router<br/>/health, /ready, /metrics, /review, /evaluate"]:::edge
+        Validate["Validation<br/>non-empty diff, 100,000 char cap"]:::control
+        Cases[("Labeled benchmark<br/>buggy and clean diffs")]:::data
     end
 
-    subgraph Providers["Provider (behind one protocol)"]
+    subgraph Prompting["Reviewer: prompt"]
         direction TB
-        Fake["FakeProvider<br/>offline rule-based detector (CI)"]:::control
-        Claude["AnthropicProvider<br/>Claude Messages API (production)"]:::control
+        Prompt["Build prompt<br/>system rules + diff in tags"]:::core
     end
 
-    subgraph Eval["Bug-catching benchmark"]
+    subgraph Providers["Provider protocol (complete system, prompt)"]
         direction TB
-        Cases[(Labeled diffs<br/>buggy and clean)]:::data
-        Score["Line-level precision and recall"]:::obs
+        Fake["FakeProvider<br/>offline, deterministic (default)"]:::core
+        Diff["Diff parser<br/>added lines + new line numbers"]:::core
+        Rules["Rule detector<br/>eval, shell=True, SQL concat,<br/>secrets, bare except"]:::control
     end
 
-    subgraph Edge["Service layer (stdlib HTTP)"]
+    Claude[["AnthropicProvider<br/>Claude Messages API"]]:::edge
+
+    subgraph Output["Reviewer: output"]
         direction TB
-        Router["Router<br/>/health | /ready | /metrics | /review | /evaluate"]:::core
-        Validate["Validation<br/>bounded diff text"]:::control
+        Parse["Parse JSON comments<br/>drop malformed items"]:::control
+        Result["Review<br/>path, line, severity, message"]:::core
     end
 
-    Result["Review comments"]:::obs
+    subgraph Evaluation["Evaluation and observability"]
+        direction TB
+        Report["BugReport<br/>line-level precision, recall, F1"]:::obs
+        Metrics["ServiceMetrics<br/>per-route latency, Prometheus"]:::obs
+    end
 
-    Diff --> Prompt --> Providers --> Parse
-    Fake -.-> Parse
-    Claude -.-> Parse
-    Cases --> Score
-    Parse -.-> Score
-    Client -->|diff| Router --> Validate --> Review
+    Client -->|diff JSON| Router
+    CLI -->|serve| Router
+    CLI -->|review| Prompt
+    CLI -->|evaluate| Cases
+    Router --> Validate
+    Validate -->|diff text| Prompt
+    Cases -->|each diff| Prompt
+    Prompt -->|complete| Fake
+    Prompt -.->|complete, production| Claude
+    Fake --> Diff
+    Diff --> Rules
+    Rules -->|JSON comments| Parse
+    Claude -.->|JSON comments| Parse
     Parse --> Result
-    Result --> Router -->|JSON response| Client
+    Result -->|flagged lines vs labels| Report
+    Result -->|JSON response| Router
+    Router -.-> Metrics

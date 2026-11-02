@@ -31,10 +31,15 @@ a **real Claude provider** powers production. The review logic, prompting, and p
   <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
-A unified diff is parsed to its added lines, embedded in a prompt, and sent to the provider, which
-returns comments as JSON that are parsed into structured findings. The same pipeline runs against
-the labeled benchmark to produce precision and recall. See the [ADRs](docs/adr/) for the key
-decisions.
+<sub>Legend: amber = entry points and external systems, indigo = core logic, green = data and state, blue = validation and control, grey = observability and outputs.</sub>
+
+A diff arrives through the HTTP service (validated and size-capped) or the CLI. The reviewer
+embeds it in a prompt and calls a provider through one `complete(system, prompt)` protocol: the
+default offline `FakeProvider` parses the diff to its added lines and runs the rule detector,
+while `AnthropicProvider` sends the same prompt to Claude. Either way the reply is JSON that is
+parsed into structured comments, dropping malformed items. The same pipeline runs over the labeled
+benchmark to produce line-level precision and recall, and every HTTP route is timed into
+Prometheus metrics. See the [ADRs](docs/adr/) for the key decisions.
 
 ## Results
 
