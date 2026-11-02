@@ -2,7 +2,7 @@
 
 ## Overview
 - **What it is:** an automated code-review pipeline (parse diff, prompt a model, parse structured
-  comments) with a labeled bug-catching benchmark. The review logic has no third-party dependency.
+  comments) with a labeled bug-catching benchmark.
 - **Base model:** pluggable. Offline, a rule-based provider is used for tests and CI; in production,
   Anthropic's Claude via the Messages API.
 - **Version and date:** 0.1.0, 2026.

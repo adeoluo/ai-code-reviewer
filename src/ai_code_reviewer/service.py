@@ -1,4 +1,4 @@
-"""A dependency-free HTTP service exposing the code reviewer.
+"""A standard-library HTTP service exposing the code reviewer.
 
 The service reviews a submitted diff and reports its bug-catching evaluation on the
 built-in benchmark. By default it uses the offline rule-based provider, so it runs

@@ -1,16 +1,14 @@
 <h1 align="center">AI Code Reviewer</h1>
 
 <p align="center">
-  <em>An automated code reviewer powered by a plugged-in language model, with a bug-catching evaluation harness. It is measured on a labeled benchmark of bug-introducing diffs, so its value is a number, not a vibe.</em>
+  <em>An automated code reviewer powered by a plugged-in language model, with an evaluation harness that measures bug-catching precision and recall on a labeled benchmark of bug-introducing diffs.</em>
 </p>
 
 <p align="center">
-  <a href="https://github.com/adeoluo/ai-code-reviewer/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://github.com/adeoluo/ai-code-reviewer/actions/workflows/ci.yml/badge.svg"></a>
-  <img alt="Coverage" src="https://img.shields.io/badge/coverage-92%25-brightgreen">
+  <a href="https://github.com/adeoluo/ai-code-reviewer/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/adeoluo/ai-code-reviewer/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/adeoluo/ai-code-reviewer/releases"><img alt="Release" src="https://img.shields.io/github/v/release/adeoluo/ai-code-reviewer"></a>
   <img alt="Python" src="https://img.shields.io/badge/python-3.11%20%7C%203.12-blue">
-  <img alt="Type checked" src="https://img.shields.io/badge/mypy-strict-blue">
-  <img alt="Runtime dependencies" src="https://img.shields.io/badge/runtime%20deps-0-brightgreen">
-  <img alt="License" src="https://img.shields.io/badge/license-MIT-green">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-green"></a>
 </p>
 
 ---
@@ -25,13 +23,12 @@ change to the reviewer is scored on **precision and recall of catching bugs**.
 
 The reviewer depends only on a small provider interface. A **deterministic, offline provider**
 powers continuous integration and the benchmark, so results are reproducible with no credentials;
-a **real Claude provider**, built on the standard library with no third-party dependency, powers
-production. The review logic, prompting, and parsing are identical in both.
+a **real Claude provider** powers production. The review logic, prompting, and parsing are identical in both.
 
 ## Architecture
 
 <p align="center">
-  <img src="docs/architecture/architecture.svg" alt="System architecture" width="900">
+  <img src="docs/architecture/architecture.svg" alt="Architecture diagram" width="860">
 </p>
 
 A unified diff is parsed to its added lines, embedded in a prompt, and sent to the provider, which
@@ -80,32 +77,10 @@ deterministic offline provider; production swaps in a real language-model API be
 interface, which is where recall on semantic bugs improves. Reproduce with
 `uv run python benchmarks/scale.py`.
 
-## Demonstration
+### Evaluation
 
-```text
-$ python -m ai_code_reviewer review --case 4
-  client.py:3 [high] hardcoded secret; load from the environment instead
-
-$ python -m ai_code_reviewer evaluate
-Bug-catching evaluation on the labeled benchmark:
-  precision=1.000, recall=0.800, f1=0.889 over 13 cases (TP=8, FP=0, FN=2)
-  missed (semantic bugs pattern rules cannot catch): off_by_one, logic_always_true
-```
-
-## Using a real model in production
-
-```python
-from ai_code_reviewer import AnthropicProvider, Reviewer
-
-reviewer = Reviewer(provider=AnthropicProvider())  # reads ANTHROPIC_API_KEY
-review = reviewer.review(open("change.diff").read())
-for comment in review.comments:
-    print(comment.path, comment.line, comment.severity, comment.message)
-```
-
-The `AnthropicProvider` calls the Claude Messages API over HTTPS using only the standard library,
-so there is still no third-party runtime dependency. It is never exercised by the test suite; CI
-uses the offline provider.
+The benchmark and offline provider are deterministic, so every number reproduces offline. Full
+method and tables: [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md).
 
 ## Quickstart
 
@@ -120,7 +95,35 @@ git diff | python -m ai_code_reviewer review --stdin   # review your own diff
 python -m ai_code_reviewer serve              # start the HTTP service on :8000
 ```
 
-## HTTP service
+## Usage
+
+### Demonstration
+
+```text
+$ python -m ai_code_reviewer review --case 4
+  client.py:3 [high] hardcoded secret; load from the environment instead
+
+$ python -m ai_code_reviewer evaluate
+Bug-catching evaluation on the labeled benchmark:
+  precision=1.000, recall=0.800, f1=0.889 over 13 cases (TP=8, FP=0, FN=2)
+  missed (semantic bugs pattern rules cannot catch): off_by_one, logic_always_true
+```
+
+### Using a real model in production
+
+```python
+from ai_code_reviewer import AnthropicProvider, Reviewer
+
+reviewer = Reviewer(provider=AnthropicProvider())  # reads ANTHROPIC_API_KEY
+review = reviewer.review(open("change.diff").read())
+for comment in review.comments:
+    print(comment.path, comment.line, comment.severity, comment.message)
+```
+
+The `AnthropicProvider` calls the Claude Messages API over HTTPS with the standard-library HTTP
+client. It is never exercised by the test suite; CI uses the offline provider.
+
+### HTTP service
 
 A standard-library HTTP service reviews diffs and reports its benchmark score. The routing logic is
 a pure function, tested without a socket. Under a concurrent stress benchmark
@@ -143,10 +146,26 @@ roughly **9,000 requests/second** at **p50 0.06 ms** with the offline provider.
 - **Evaluate on labeled bug-introducing diffs** - a review tool is only as good as its measured
   bug-catching rate; the benchmark is the point. See [ADR 0003](docs/adr/0003-bug-benchmark.md).
 
-## Evaluation
+## Testing
 
-The benchmark and offline provider are deterministic, so every number reproduces offline. Full
-method and tables: [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md).
+```bash
+make test                     # or: uv run pytest
+uv run pytest --cov=src --cov-report=term-missing --cov-fail-under=80
+```
+
+The suite in `tests/` runs offline against the deterministic provider:
+
+- `test_reviewer.py`: unified diff parsing (added lines, line numbers, removed lines
+  ignored), the rule detectors on known defects and on clean code, prompt construction,
+  parsing of provider output including non-JSON responses, and the benchmark evaluation
+  (precision, recall, and no comments on clean cases).
+- `test_service_cli.py`: the HTTP handler layer (`/health`, `/ready`, `/review`,
+  `/evaluate`, `/metrics`, validation, unknown routes) and the CLI commands.
+
+The `AnthropicProvider` needs network access and credentials, so it is excluded from the
+suite. CI (`.github/workflows/ci.yml`) runs `ruff format --check`, `ruff check`, `mypy src`,
+and `pytest` with an 80% coverage gate on Python 3.11 and 3.12, then builds the package and
+the Docker image.
 
 ## Responsible AI
 
@@ -171,4 +190,4 @@ method and tables: [`docs/EVALUATION_REPORT.md`](docs/EVALUATION_REPORT.md).
 
 ## License
 
-[MIT](LICENSE)
+Released under the [MIT License](LICENSE).
