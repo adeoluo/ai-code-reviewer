@@ -143,6 +143,22 @@ roughly **9,000 requests/second** at **p50 0.06 ms** with the offline provider.
 | POST | `/review` | body `{"diff": str}`; review comments for the diff |
 | GET | `/evaluate` | bug-catching precision and recall on the built-in benchmark |
 
+### Demos
+
+Recorded from real runs with [vhs](https://github.com/charmbracelet/vhs); each tape is in `docs/demo/`.
+
+Two reviews of bundled diffs, with the findings for each.
+
+<p align="center">
+  <img src="docs/demo/review.gif" alt="Two reviews of bundled diffs, with the findings for each" width="860">
+</p>
+
+Precision and recall of the reviewer on the labeled cases.
+
+<p align="center">
+  <img src="docs/demo/evaluate.gif" alt="Precision and recall of the reviewer on the labeled cases" width="860">
+</p>
+
 ## Design decisions
 
 - **A provider interface with an offline fake** - keeping the model behind a protocol lets CI and
