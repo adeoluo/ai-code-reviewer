@@ -159,6 +159,12 @@ Precision and recall of the reviewer on the labeled cases.
   <img src="docs/demo/evaluate.gif" alt="Precision and recall of the reviewer on the labeled cases" width="860">
 </p>
 
+The HTTP service reviewing a diff with a mutable default and a hardcoded secret.
+
+<p align="center">
+  <img src="docs/demo/http.gif" alt="The HTTP service reviewing a diff with a mutable default and a hardcoded secret" width="860">
+</p>
+
 ## Design decisions
 
 - **A provider interface with an offline fake** - keeping the model behind a protocol lets CI and
