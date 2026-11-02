@@ -5,56 +5,36 @@ flowchart LR
     classDef control  fill:#0EA5E9,stroke:#1E293B,color:#ffffff,stroke-width:1px;
     classDef obs      fill:#CBD5E1,stroke:#1E293B,color:#1E293B,stroke-width:1px;
 
-    Client(["HTTP client"]):::edge
-    CLI(["CLI<br/>review, evaluate, serve"]):::edge
-
-    subgraph Inputs["Inputs (stdlib HTTP service and benchmark)"]
+    subgraph Interfaces["Interfaces and prompt"]
         direction TB
-        Router["Router<br/>/health, /ready, /metrics, /review, /evaluate"]:::edge
-        Validate["Validation<br/>non-empty diff, 100,000 char cap"]:::control
-        Cases[("Labeled benchmark<br/>buggy and clean diffs")]:::data
+        Client([HTTP client]):::edge
+        CLI(["CLI<br/>review, evaluate, serve"]):::edge
+        Router["Router<br/>/review, /evaluate"]:::edge
+        Validate["Validation<br/>100,000 char cap"]:::control
+        Prompt["Build prompt<br/>rules + diff in tags"]:::core
+        CLI ~~~ Client --> Router --> Validate --> Prompt
     end
 
-    subgraph Prompting["Reviewer: prompt"]
+    subgraph Providers["Provider protocol"]
         direction TB
-        Prompt["Build prompt<br/>system rules + diff in tags"]:::core
+        Fake["FakeProvider<br/>offline default"]:::core
+        Diff["Diff parser<br/>added lines"]:::core
+        Rules["Rule detector<br/>eval, shell=True, SQL"]:::control
+        Claude[["AnthropicProvider<br/>Claude Messages API"]]:::edge
+        Fake --> Diff --> Rules ~~~ Claude
     end
 
-    subgraph Providers["Provider protocol (complete system, prompt)"]
-        direction TB
-        Fake["FakeProvider<br/>offline, deterministic (default)"]:::core
-        Diff["Diff parser<br/>added lines + new line numbers"]:::core
-        Rules["Rule detector<br/>eval, shell=True, SQL concat,<br/>secrets, bare except"]:::control
-    end
-
-    Claude[["AnthropicProvider<br/>Claude Messages API"]]:::edge
-
-    subgraph Output["Reviewer: output"]
+    subgraph Output["Output and evaluation"]
         direction TB
         Parse["Parse JSON comments<br/>drop malformed items"]:::control
-        Result["Review<br/>path, line, severity, message"]:::core
+        Result["Review<br/>path, line, severity"]:::core
+        Cases[("Labeled benchmark<br/>buggy and clean diffs")]:::data
+        Report["BugReport<br/>precision, recall, F1"]:::obs
+        Metrics["ServiceMetrics<br/>Prometheus"]:::obs
+        Parse --> Result --> Report
+        Cases --> Report
+        Report ~~~ Metrics
     end
 
-    subgraph Evaluation["Evaluation and observability"]
-        direction TB
-        Report["BugReport<br/>line-level precision, recall, F1"]:::obs
-        Metrics["ServiceMetrics<br/>per-route latency, Prometheus"]:::obs
-    end
-
-    Client -->|diff JSON| Router
-    CLI -->|serve| Router
-    CLI -->|review| Prompt
-    CLI -->|evaluate| Cases
-    Router --> Validate
-    Validate -->|diff text| Prompt
-    Cases -->|each diff| Prompt
-    Prompt -->|complete| Fake
-    Prompt -.->|production| Claude
-    Fake -.->|uses| Diff
-    Fake -.->|uses| Rules
-    Fake -->|JSON comments| Parse
-    Claude -.->|JSON comments| Parse
-    Parse --> Result
-    Result -->|flagged lines| Report
-    Result -->|JSON response| Router
-    Router -.-> Metrics
+    Interfaces -->|system + prompt| Providers
+    Providers -->|JSON comments| Output
