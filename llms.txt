@@ -1,0 +1,34 @@
+# AI Code Reviewer
+
+> An automated code reviewer powered by a plugged-in language model, with an evaluation harness that measures bug-catching precision and recall on a labeled benchmark of bug-introducing diffs.
+
+Languages: Python. License: MIT. Source: https://github.com/adeoluo/ai-code-reviewer
+
+## Docs
+
+- [README](https://github.com/adeoluo/ai-code-reviewer/blob/main/README.md): motivation, architecture, results, quickstart, usage, design decisions, testing, responsible ai, limitations, roadmap
+- [AGENTS.md](https://github.com/adeoluo/ai-code-reviewer/blob/main/AGENTS.md): layout, commands and conventions for changing the code
+- [Architecture diagram](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/architecture/architecture.mmd): Mermaid source of the component diagram
+- [Data Card - AI Code Reviewer](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/DATA_CARD.md)
+- [Definition of Done](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/DEFINITION_OF_DONE.md)
+- [Evaluation Report - AI Code Reviewer](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/EVALUATION_REPORT.md)
+- [Model / System Card - AI Code Reviewer](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/MODEL_CARD.md)
+- [Threat Model - AI Code Reviewer](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/THREAT_MODEL.md)
+- [ADR-0001: Record architecture decisions](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/adr/0001-record-architecture-decisions.md)
+- [ADR-0002: A provider interface with an offline fake](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/adr/0002-provider-interface.md)
+- [ADR-0003: Evaluate on labeled bug-introducing diffs](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/adr/0003-bug-benchmark.md)
+- [ADR-NNNN: <short title>](https://github.com/adeoluo/ai-code-reviewer/blob/main/docs/adr/template.md)
+- [Changelog](https://github.com/adeoluo/ai-code-reviewer/blob/main/CHANGELOG.md): release history
+
+## Source
+
+- [src/ai_code_reviewer/__init__.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/__init__.py): AI Code Reviewer - automated code review with a bug-catching benchmark.
+- [src/ai_code_reviewer/cli.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/cli.py): Command line interface for the code reviewer.
+- [src/ai_code_reviewer/data.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/data.py): A labeled benchmark of diffs, each marked as introducing a bug or clean.
+- [src/ai_code_reviewer/diff.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/diff.py): A minimal unified-diff parser.
+- [src/ai_code_reviewer/evaluation.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/evaluation.py): Evaluation: line-level precision and recall of catching planted bugs.
+- [src/ai_code_reviewer/observability.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/observability.py): In-process request metrics for the HTTP service (Prometheus text exposition).
+- [src/ai_code_reviewer/provider.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/provider.py): The language-model provider interface, a deterministic fake, and a real client.
+- [src/ai_code_reviewer/reviewer.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/reviewer.py): The reviewer: build a prompt from a diff, call the provider, parse comments.
+- [src/ai_code_reviewer/rules.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/rules.py): A rule-based bug detector over added diff lines.
+- [src/ai_code_reviewer/service.py](https://github.com/adeoluo/ai-code-reviewer/blob/main/src/ai_code_reviewer/service.py): A standard-library HTTP service exposing the code reviewer.
