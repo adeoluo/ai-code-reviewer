@@ -1,10 +1,24 @@
 cff-version: 1.2.0
-message: "If you use this work, please cite it."
-title: "Ai Code Reviewer"
+message: "If you use this software, please cite it as below."
+type: software
+title: "AI Code Reviewer"
+abstract: "An automated code reviewer powered by a plugged-in language model (Claude in production, an offline provider in CI), evaluated on a labeled benchmark of bug-introducing diffs for real bug-catching precision and recall."
 authors:
   - family-names: "Ogunnoiki"
     given-names: "Adeolu"
-version: 0.1.0
-date-released: 2026-01-01
+version: "0.1.0"
+date-released: "2026-11-03"
 license: MIT
+repository-code: "https://github.com/adeoluo/ai-code-reviewer"
 url: "https://github.com/adeoluo/ai-code-reviewer"
+keywords:
+  - "anthropic"
+  - "code-review"
+  - "developer-tools"
+  - "evaluation"
+  - "llm"
+  - "python"
+  - "static-analysis"
+  - "ai-code-review"
+  - "claude"
+  - "llm-evaluation"
