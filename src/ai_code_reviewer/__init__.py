@@ -9,7 +9,7 @@ from ai_code_reviewer.provider import AnthropicProvider, FakeProvider, Provider
 from ai_code_reviewer.reviewer import Comment, Review, Reviewer, build_prompt
 from ai_code_reviewer.rules import Finding, detect
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 __all__ = [
     "AddedLine",
